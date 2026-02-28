@@ -1,6 +1,6 @@
 # database/models.py
 from datetime import datetime, date
-from db import db
+from DATABASE.db import db
 import bcrypt
 import re
 from email_validator import validate_email, EmailNotValidError

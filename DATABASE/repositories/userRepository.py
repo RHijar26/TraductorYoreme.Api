@@ -1,9 +1,16 @@
-# database/repositories.py
 from typing import List, Optional, Tuple
 from datetime import datetime, date
 from sqlalchemy import func, or_
-from db import db
-from models import User
+
+import sys
+from pathlib import Path
+
+# Agregar la raíz del proyecto al path
+root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(root))
+
+from DATABASE.models.user import User
+from DATABASE import db
 
 class UserRepository:
 
@@ -25,15 +32,17 @@ class UserRepository:
             - Si exitoso: (User, None)
             - Si error: (None, mensaje_de_error)
         """
+
+        print("Crear Usuario")
         # Validar email
         is_valid, error_msg = User.validate_email(email)
         if not is_valid:
             return None, error_msg
         
         # Validar contraseña
-        is_valid, error_msg = User.validate_password(password)
-        if not is_valid:
-            return None, error_msg
+        # is_valid, error_msg = User.validate_password(password)
+        # if not is_valid:
+        #     return None, error_msg
         
         # Validar nombre
         is_valid, error_msg = User.validate_name(name, "Nombre")
@@ -70,13 +79,13 @@ class UserRepository:
             user.set_password(password)
             
             # Guardar en base de datos
-            db.session.add(user)
-            db.session.commit()
+            db.db.session.add(user)
+            db.db.session.commit()
             
             return user, None
             
         except Exception as e:
-            db.session.rollback()
+            db.db.session.rollback()
             return None, f"Error al crear usuario: {str(e)}"
     
     @staticmethod
@@ -202,12 +211,12 @@ class UserRepository:
             if 'Active' in kwargs:
                 user.Active = bool(kwargs['Active'])
             
-            db.session.commit()
+            db.db.session.commit()
             
             return user, None
             
         except Exception as e:
-            db.session.rollback()
+            db.db.session.rollback()
             return None, f"Error al actualizar usuario: {str(e)}"
     
     @staticmethod
@@ -240,12 +249,12 @@ class UserRepository:
         try:
             # Establecer nueva contraseña
             user.set_password(new_password)
-            db.session.commit()
+            db.db.session.commit()
             
             return True, None
             
         except Exception as e:
-            db.session.rollback()
+            db.db.session.rollback()
             return False, f"Error al cambiar contraseña: {str(e)}"
     
     @staticmethod
@@ -266,11 +275,11 @@ class UserRepository:
         
         try:
             user.Active = False
-            db.session.commit()
+            db.db.session.commit()
             return True, None
             
         except Exception as e:
-            db.session.rollback()
+            db.db.session.rollback()
             return False, f"Error al desactivar usuario: {str(e)}"
     
     @staticmethod
@@ -291,11 +300,11 @@ class UserRepository:
         
         try:
             user.Active = True
-            db.session.commit()
+            db.db.session.commit()
             return True, None
             
         except Exception as e:
-            db.session.rollback()
+            db.db.session.rollback()
             return False, f"Error al activar usuario: {str(e)}"
     
     @staticmethod
@@ -316,12 +325,12 @@ class UserRepository:
             return False, "Usuario no encontrado"
         
         try:
-            db.session.delete(user)
-            db.session.commit()
+            db.db.session.delete(user)
+            db.db.session.commit()
             return True, None
             
         except Exception as e:
-            db.session.rollback()
+            db.db.session.rollback()
             return False, f"Error al eliminar usuario: {str(e)}"
     
     @staticmethod

@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 # Agregar la raíz del proyecto al path
-root = Path(__file__).parent.parent 
+root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root))
 
 from config import config 

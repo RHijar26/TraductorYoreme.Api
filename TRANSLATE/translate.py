@@ -1,7 +1,15 @@
 from tensorflow import keras
 from keras_transformer import decode,get_custom_objects as get_transformer_objects
+
+import sys
+from pathlib import Path
+
+# Agregar la raíz del proyecto al path
+root = Path(__file__).parent.parent
+sys.path.insert(0, str(root))
+
+from TRANSLATE.tokenizer import build_yor_token_dict, build_esp_token_dict
 from config import config 
-import tokenizer
 
 custom_objects = get_transformer_objects()
 
@@ -11,8 +19,8 @@ model = keras.models.load_model(
 )
 
 #Se asignan direcciones
-source_token_dict = tokenizer.build_esp_token_dict()
-target_token_dict = tokenizer.build_yor_token_dict()
+source_token_dict = build_esp_token_dict()
+target_token_dict = build_yor_token_dict()
 target_token_dict_inv = {v:k for k,v in target_token_dict.items()}
 
 def translate(sentence):

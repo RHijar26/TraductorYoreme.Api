@@ -33,19 +33,49 @@ class Settings:
     def database_url(self) -> str:                     
         return os.getenv('DATABASE_URL')
     
+    @property
+    def sqlalchemy_track_modifications(self) -> bool:
+        """
+        Desactiva el sistema de seguimiento de modificaciones de SQLAlchemy.
+        Ahorra memoria y recursos. Recomendado: False
+        """
+        return os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS', 'False').lower() == 'true'
+    
+    @property
+    def database_echo(self) -> bool:
+        """
+        Si True, SQLAlchemy imprime todas las queries SQL en la consola.
+        Útil para debugging. Recomendado: True en desarrollo, False en producción.
+        """
+        return os.getenv('DATABASE_ECHO', 'False').lower() == 'true'
+    
 
     #Api Congiguration
     @property
     def api_host(self) -> str:
-        return os.getenv('API_HOST', '0.0.0.0')
+        return os.getenv('API_HOST')
     
     @property
     def api_port(self) -> int:
-        return int(os.getenv('API_PORT', '5000'))
+        return int(os.getenv('API_PORT'))
     
     @property
     def app_debug(self) -> bool:
-        return os.getenv('APP_DEBUG', 'False').lower() == 'true'
+        return os.getenv('APP_DEBUG').lower() == 'true'
+    
+    #JWToken
+    @property
+    def JW_TOKEN_EXPIRATION_TIME(self) -> int:
+        return int(os.getenv('JWT_EXPIRATION_TIME'))
+    
+    @property
+    def JW_ALGORITHM(self) -> str:
+        return os.getenv('JWT_ALGORITHM')
+    
+    @property
+    def JW_SECRET_KEY(self) -> str:
+        return os.getenv('SECRET_KEY')
+
     
 
 config = Settings()
