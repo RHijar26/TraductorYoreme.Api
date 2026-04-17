@@ -17,9 +17,14 @@ from DATABASE.db import init_db
 init_db(app)
 
 import API.EndPoints.users as users
+import API.EndPoints.models as models
 import API.EndPoints.auth as auth
+import API.EndPoints.regions as regions
+
 # Registrar blueprints
 app.register_blueprint(users.users_bp)  # /api/users/*
+app.register_blueprint(models.models_bp)  # /api/models/*
+app.register_blueprint(regions.regions_bp)  # /api/regions/*
 app.register_blueprint(auth.auth_bp)  # /api/auth/*
 
 #Translate methods

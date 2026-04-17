@@ -31,18 +31,16 @@ class UserRepository:
             (user, error_message)
             - Si exitoso: (User, None)
             - Si error: (None, mensaje_de_error)
-        """
-
-        print("Crear Usuario")
+        """        
         # Validar email
         is_valid, error_msg = User.validate_email(email)
         if not is_valid:
             return None, error_msg
         
         # Validar contraseña
-        # is_valid, error_msg = User.validate_password(password)
-        # if not is_valid:
-        #     return None, error_msg
+        is_valid, error_msg = User.validate_password(password)
+        if not is_valid:
+            return None, error_msg
         
         # Validar nombre
         is_valid, error_msg = User.validate_name(name, "Nombre")
@@ -310,14 +308,13 @@ class UserRepository:
     @staticmethod
     def delete(user_id: int) -> Tuple[bool, Optional[str]]:
         """
-        Elimina un usuario permanentemente (hard delete).
-        ⚠️ USAR CON PRECAUCIÓN - Esta acción es irreversible.
+        Elimina un usuario permanentemente (soft delete).        
         
         Args:
             user_id: ID del usuario
         
         Returns:
-            (success, error_message)
+            (success, error_message)    
         """
         user = UserRepository.get_by_id(user_id)
         
@@ -325,7 +322,7 @@ class UserRepository:
             return False, "Usuario no encontrado"
         
         try:
-            db.db.session.delete(user)
+            user.Active = False  # Soft delete
             db.db.session.commit()
             return True, None
             
