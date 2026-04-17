@@ -74,7 +74,7 @@ class Region(db.Model):
         return True, ""
     
     
-    def to_dict(self, include_password=False):
+    def to_dict(self):
         """
         Convierte el modelo a diccionario para JSON.                
         """    
