@@ -256,31 +256,6 @@ class UserRepository:
             return False, f"Error al cambiar contraseña: {str(e)}"
     
     @staticmethod
-    def deactivate(user_id: int) -> Tuple[bool, Optional[str]]:
-        """
-        Desactiva un usuario (soft delete).
-        
-        Args:
-            user_id: ID del usuario
-        
-        Returns:
-            (success, error_message)
-        """
-        user = UserRepository.get_by_id(user_id)
-        
-        if not user:
-            return False, "Usuario no encontrado"
-        
-        try:
-            user.Active = False
-            db.db.session.commit()
-            return True, None
-            
-        except Exception as e:
-            db.db.session.rollback()
-            return False, f"Error al desactivar usuario: {str(e)}"
-    
-    @staticmethod
     def activate(user_id: int) -> Tuple[bool, Optional[str]]:
         """
         Activa un usuario desactivado.

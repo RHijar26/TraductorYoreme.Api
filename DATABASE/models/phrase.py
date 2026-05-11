@@ -10,7 +10,7 @@ class Phrase(db.Model):
     """
 
 
-    __tablename__ = 'Phrases'
+    __tablename__ = 'Phrase'
 
     Id = db.Column('Id', db.BigInteger, primary_key=True, autoincrement=True)    
     SourceLanguageId = db.Column('SourceLanguageId', db.Text, nullable=False)

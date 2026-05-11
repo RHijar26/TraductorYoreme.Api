@@ -5,9 +5,9 @@ import re
 class Lenguage(db.Model):
     """
     Modelo para lenguajes del sistema.
-    Basado en la tabla Lenguages de PostgreSQL.
+    Basado en la tabla Language de PostgreSQL.
     """
-    __tablename__ = 'Lenguages'
+    __tablename__ = 'Language'
 
     Id = db.Column('Id', db.BigInteger, primary_key=True, autoincrement=True)    
     Name = db.Column('Name', db.Text, nullable=False)    

@@ -66,10 +66,7 @@ def register():
 def get_all():    
     try:
         models = ModelRepository.get_all()
-        return jsonify({
-            'success': True,
-            'data': [model.to_dict() for model in models]
-        }), 200
+        return jsonify([model.to_dict() for model in models]), 200
     except Exception as e:
         return jsonify({
             'success': False,

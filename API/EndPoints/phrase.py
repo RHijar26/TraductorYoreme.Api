@@ -8,16 +8,17 @@ from pathlib import Path
 root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root))
 
-from DATABASE.repositories.regionRepository import RegionRepository
+
+from DATABASE.repositories.phraseRepository import PhraseRepository
 from DATABASE.db import db
 
+phrase_bp = Blueprint('phrases', __name__, url_prefix='/phrases')
 
-regions_bp = Blueprint('regions', __name__, url_prefix='/regions')
-@regions_bp.post('/register')
+@phrase_bp.post('/register')
 def register():
     try:
         # Obtener datos del request
-        data = request.get_json()        
+        data = request.get_json()
 
         if not data:
             return jsonify({
@@ -26,7 +27,7 @@ def register():
             }), 400
         
         # Validar campos requeridos
-        required_fields = ['name', 'description']
+        required_fields = ['sourceLanguage', 'targetLanguage', 'regionId', 'modelId', 'phrase', 'traduction']
         missing_fields = [field for field in required_fields if not data.get(field)]
 
         if missing_fields:
@@ -35,10 +36,14 @@ def register():
                 'error': f'Campos requeridos faltantes: {", ".join(missing_fields)}'
             }), 400
         
-        # Crear Region
-        region, error = RegionRepository.create(
-            name=data['name'],
-            description=data['description']
+        # Crear frase
+        phrase, error = PhraseRepository.create(
+            sourceLanguage=data['sourceLanguage'],
+            targetLanguage=data['targetLanguage'],
+            regionId=data['regionId'],
+            modelId=data['modelId'],
+            phrase=data['phrase'],
+            traduction=data['traduction']
         )
 
         if error:
@@ -49,11 +54,11 @@ def register():
                 'error': error
             }), status_code
         
-        #Region creada exitosamente
+        #Frase creada exitosamente
         return jsonify({
             'success': True,
-            'message': 'Región registrada exitosamente',
-            'data': region.to_dict()
+            'message': 'Frase registrada exitosamente',
+            'data': phrase.to_dict()
         }), 201
 
     except Exception as e:
@@ -61,34 +66,13 @@ def register():
             'success': False,
             'error': f'Error: {str(e)}'
         }), 500
+    
 
-@regions_bp.get('/')
-def get_all():   
+@phrase_bp.get('/')
+def get_all():
     try:
-        regions = RegionRepository.get_all()
-        return jsonify([region.to_dict() for region in regions]), 200
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': f'Error: {str(e)}'
-        }), 500
-
-@regions_bp.delete('/<int:region_id>')
-def delete(region_id):
-    try:
-        success, error = RegionRepository.delete(region_id)
-        if not success:
-            status_code = 404 if 'no encontrada' in error else 400
-            return jsonify({
-                'success': False,
-                'error': error
-            }), status_code
-        
-        return jsonify({
-            'success': True,
-            'message': 'Región eliminada exitosamente'
-        }), 200
-
+        phrases = PhraseRepository.get_all()
+        return jsonify([phrase.to_dict() for phrase in phrases]), 200
     except Exception as e:
         return jsonify({
             'success': False,
