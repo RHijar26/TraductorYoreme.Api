@@ -64,4 +64,32 @@ def register():
             'success': False,
             'error': f'Error interno del servidor: {str(e)}'
         }), 500
-    
+
+@users_bp.get('/')
+def get_all():
+    try:
+        page = request.args.get('page', 1, type=int)
+        page_size = request.args.get('pageSize', 100, type=int)
+        active_only = request.args.get('activeOnly', 'true').lower() == 'true'
+
+        if page < 1 or page_size < 1:
+            return jsonify({
+                'success': False,
+                'error': 'Los parámetros page y pageSize deben ser mayores a 0'
+            }), 400
+
+        users = UserRepository.get_all(active_only=active_only, page=page, page_size=page_size)
+
+        return jsonify({
+            'success': True,
+            'data': [{k[0].lower() + k[1:]: v for k, v in user.items()} for user in users],
+            'page': page,
+            'pageSize': page_size
+            
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error interno del servidor: {str(e)}'
+        }), 500

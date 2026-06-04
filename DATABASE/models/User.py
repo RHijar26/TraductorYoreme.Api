@@ -21,6 +21,8 @@ class User(db.Model):
     SecondLastName = db.Column('SecondLastName', db.Text, nullable=False)
     CreateDate = db.Column('CreateDate', db.Date, nullable=False, default=date.today)
     Active = db.Column('Active', db.Boolean, nullable=False, default=True)
+    Acepted = db.Column('Acepted', db.Boolean, nullable=False, default=True)
+    RoleId =  db.Column('RoleId', db.BigInteger, primary_key=True, autoincrement=True)    
     
     # Índices adicionales
     __table_args__ = (

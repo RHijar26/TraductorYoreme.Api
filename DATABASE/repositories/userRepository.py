@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 from datetime import datetime, date
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, text
 
 import sys
 from pathlib import Path
@@ -70,7 +70,8 @@ class UserRepository:
                 LastName=last_name.strip(),
                 SecondLastName=second_last_name.strip(),
                 CreateDate=date.today(),
-                Active=True
+                Active=True,
+                Acepted=False,                                
             )
             
             # Hashear contraseña
@@ -305,25 +306,29 @@ class UserRepository:
             db.db.session.rollback()
             return False, f"Error al eliminar usuario: {str(e)}"
     
-    @staticmethod
-    def get_all(active_only: bool = True, limit: int = 100, offset: int = 0) -> List[User]:
-        """
-        Obtiene todos los usuarios con paginación.
-        
-        Args:
-            active_only: Si True, solo usuarios activos
-            limit: Número máximo de resultados
-            offset: Número de resultados a saltar
-        
-        Returns:
-            Lista de usuarios
-        """
-        query = User.query
-        
-        if active_only:
-            query = query.filter_by(Active=True)
-        
-        return query.order_by(User.CreateDate.desc()).limit(limit).offset(offset).all()
+    @staticmethod    
+    def get_all(active_only: bool = True, page: int = 1, page_size: int = 100) -> List[dict]:    
+
+        offset = (page - 1) * page_size
+
+        active_filter = 'AND users."Active" = TRUE' if active_only else ''
+
+        sql = text(f"""
+            SELECT users."Id",
+                CONCAT(users."Name", ' ', users."LastName", ' ', users."SecondLastName") AS "FullName",
+                users."Email",
+                roles."Name" AS "Role",
+                users."Active",
+                users."CreateDate"
+            FROM public."Users" AS users
+            INNER JOIN public."Roles" AS roles ON roles."Id" = users."RoleId"
+            {active_filter}
+            ORDER BY users."Id"
+            LIMIT :page_size OFFSET :offset
+        """)
+
+        result = db.db.session.execute(sql, {"page_size": page_size, "offset": offset})
+        return [row._mapping for row in result]
     
     @staticmethod
     def search(query_str: str, active_only: bool = True, limit: int = 50) -> List[User]:

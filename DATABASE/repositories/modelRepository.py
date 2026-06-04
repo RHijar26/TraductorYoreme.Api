@@ -13,9 +13,6 @@ from DATABASE.models.model import Model
 from DATABASE import db
 
 class ModelRepository:
-
-
-
     @staticmethod
     def create(name: str, description: str) -> Tuple[Optional[Model], Optional[str]]:
         """Crea un nuevo modelo en la base de datos.
