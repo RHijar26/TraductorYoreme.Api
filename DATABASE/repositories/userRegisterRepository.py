@@ -63,7 +63,7 @@ class UserRegisterRepository:
         return new_user
     
     @staticmethod
-    def Approve(user_register_id: int) -> Optional[UserRegister]:
+    def approve(user_register_id: int) -> Optional[UserRegister]:
         """Aprueba un registro de usuario, activándolo y estableciendo la fecha de aprobación.
         
         Args:
