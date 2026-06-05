@@ -1,8 +1,8 @@
 # database/models.py
+import re
 from datetime import datetime, date
 from DATABASE.db import db
 from email_validator import validate_email, EmailNotValidError
-
 
 class UserRegister(db.Model):
     """
@@ -71,3 +71,13 @@ class UserRegister(db.Model):
         
         return True, ""
     
+    def to_dict(self):
+        return {
+            'id': self.Id,
+            'email': self.Email,
+            'name': self.Name + ' ' + self.LastName + ' ' + self.SecondLastName,            
+            'aboutMe': self.AboutMe,
+            'createDate': self.CreateDate.isoformat() if self.CreateDate else None,
+            'approvalDate': self.ApprovalDate.isoformat() if self.ApprovalDate else None,
+            'active': self.Active
+        }

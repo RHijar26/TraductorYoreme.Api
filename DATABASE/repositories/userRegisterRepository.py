@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 from datetime import datetime, date
-from sqlalchemy import func, or_, text
+from sqlalchemy import func, or_, text, true
 
 import sys
 from pathlib import Path
@@ -33,19 +33,25 @@ class UserRegisterRepository:
         # Validar email
         is_valid, error_msg = UserRegister.validate_email(email)
         if not is_valid:
-            raise ValueError(error_msg)
+            raise ValueError(error_msg)        
+
+        print(f"Validación exitosa para email: {email}")        
         
         # Validar nombre y apellidos
         for field_value, field_name in [(name, "Nombre"), (last_name, "Apellido"), (second_last_name, "Segundo Apellido")]:
             is_valid, error_msg = UserRegister.validate_name(field_value, field_name)
             if not is_valid:
-                raise ValueError(error_msg)
-        
+                raise ValueError(error_msg)                
+
         # Verificar si el email ya está registrado
         existing_user = User.query.filter(func.lower(User.Email) == email.lower()).first()
         if existing_user:
-            raise ValueError(f"El email '{email}' ya está registrado con otro usuario.")
-        
+            raise ValueError(f"El email '{email}' ya está registrado con otro usuario.")                
+
+        existing_register = UserRegister.query.filter(func.lower(UserRegister.Email) == email.lower()).first()
+        if existing_register:
+            raise ValueError(f"El email '{email}' ya está registrado en el proceso de registro.")
+
         # Crear nuevo registro de usuario
         new_user = UserRegister(
             Email=email,
@@ -54,16 +60,16 @@ class UserRegisterRepository:
             SecondLastName=second_last_name,
             AboutMe=about_me,
             CreateDate=date.today(),
-            Active=False  # Por defecto inactivo hasta que se apruebe
+            Active=True  # Por defecto inactivo hasta que se apruebe
         )
         
         db.db.session.add(new_user)
         db.db.session.commit()
         
-        return new_user
+        return new_user, None
     
     @staticmethod
-    def approve(user_register_id: int) -> Optional[UserRegister]:
+    def approve(user_register_id: int) -> Optional[UserRegister]:        
         """Aprueba un registro de usuario, activándolo y estableciendo la fecha de aprobación.
         
         Args:
@@ -82,3 +88,18 @@ class UserRegisterRepository:
         db.db.session.commit()
         
         return user_register
+    
+    @staticmethod
+    def get_all() -> List[UserRegister]:
+        """Obtiene todos los registros de usuario, con opción de filtrar solo los activos.
+        
+        Args:
+            active_only: Si es True, solo devuelve registros activos. Si es False, devuelve todos los registros.
+        
+        Returns:
+            List[UserRegister]: Lista de registros de usuario
+        """
+        query = UserRegister.query        
+        query = query.filter_by(Active=True)
+        
+        return query.all()

@@ -57,7 +57,6 @@ def register():
         return jsonify({
             'success': True,
             'message': 'Registro de usuario creado exitosamente',
-            'data': user_register.to_dict()
         }), 201
 
     except Exception as e:
@@ -87,3 +86,17 @@ def approve(user_register_id: int):
             'success': False,
             'error': str(e)
         }), 500
+    
+@user_register_bp.get('/')
+def get_all():
+    try:
+        user_registers = UserRegisterRepository.get_all()
+        return jsonify({
+            'success': True,
+            'data': [ur.to_dict() for ur in user_registers]
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500    

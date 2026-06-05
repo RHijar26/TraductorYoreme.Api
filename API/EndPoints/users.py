@@ -56,7 +56,6 @@ def register():
         return jsonify({
             'success': True,
             'message': 'Usuario registrado exitosamente',
-            'data': user.to_dict()
         }), 201
     
     except Exception as e:        

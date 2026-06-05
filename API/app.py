@@ -22,6 +22,7 @@ import API.EndPoints.auth as auth
 import API.EndPoints.regions as regions
 import API.EndPoints.lenguage as lenguage
 import API.EndPoints.phrase as phrase
+import API.EndPoints.userRegister as userRegister
 
 
 # Registrar blueprints
@@ -31,6 +32,7 @@ app.register_blueprint(regions.regions_bp)  # /api/regions/*
 app.register_blueprint(auth.auth_bp)  # /api/auth/*
 app.register_blueprint(lenguage.lenguage_bp)  # /api/lenguage/*
 app.register_blueprint(phrase.phrase_bp)  # /api/phrases
+app.register_blueprint(userRegister.user_register_bp)  # /api/userRegister/*
 
 #Translate methods
 import TRANSLATE
