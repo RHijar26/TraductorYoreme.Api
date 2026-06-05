@@ -103,3 +103,12 @@ class UserRegisterRepository:
         query = query.filter_by(Active=True)
         
         return query.all()
+    
+    @staticmethod
+    def get_pending() -> int:
+        """Obtiene el número de registros de usuario pendientes de aprobación.
+        
+        Returns:
+            int: Número de registros de usuario pendientes
+        """
+        return UserRegister.query.filter_by(Active=True, ApprovalDate=None).count()

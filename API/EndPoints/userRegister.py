@@ -100,3 +100,17 @@ def get_all():
             'success': False,
             'error': str(e)
         }), 500    
+    
+@user_register_bp.get('/pending')
+def get_pending():
+    try:
+        pending_count = UserRegisterRepository.get_pending()
+        return jsonify({
+            'success': True,
+            'data': pending_count
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
