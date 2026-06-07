@@ -114,3 +114,25 @@ def get_pending():
             'success': False,
             'error': str(e)
         }), 500
+    
+@user_register_bp.put('/decline/<int:user_register_id>')
+def decline(user_register_id: int):
+    try:
+        user_register = UserRegisterRepository.decline(user_register_id)
+        if not user_register:
+            return jsonify({
+                'success': False,
+                'error': 'Registro de usuario no encontrado'
+            }), 404
+
+        return jsonify({
+            'success': True,
+            'message': 'Registro de usuario declinado exitosamente',
+            'data': user_register.to_dict()
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

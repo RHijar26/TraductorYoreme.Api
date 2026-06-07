@@ -90,6 +90,22 @@ class UserRegisterRepository:
         return user_register
     
     @staticmethod
+    def decline(user_register_id: int) -> Optional[UserRegister]:
+        """Declina un registro de usuario, desactivándolo y estableciendo la fecha de declinación.
+        
+        Args:
+            user_register_id: ID del registro de usuario a declinar
+            """
+        user_register = UserRegister.query.get(user_register_id)
+        if not user_register:
+            return None
+        
+        user_register.Active = False                
+        db.db.session.commit()
+        
+        return user_register
+
+    @staticmethod
     def get_all() -> List[UserRegister]:
         """Obtiene todos los registros de usuario, con opción de filtrar solo los activos.
         
@@ -112,3 +128,4 @@ class UserRegisterRepository:
             int: Número de registros de usuario pendientes
         """
         return UserRegister.query.filter_by(Active=True, ApprovalDate=None).count()
+    
