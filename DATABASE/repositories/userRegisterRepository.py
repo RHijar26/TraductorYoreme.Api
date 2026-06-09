@@ -78,13 +78,12 @@ class UserRegisterRepository:
         Returns:
             UserRegister: El registro de usuario aprobado, o None si no se encuentra
         """
-        user_register = UserRegister.query.get(user_register_id)
+        user_register = UserRegister.query.filter_by(Active=True,Id=user_register_id).first()
         if not user_register:
             return None
-        
-        user_register.Active = True
-        user_register.ApprovalDate = date.today()
-        
+                
+        user_register.ApprovalDate = date.today()    
+
         db.db.session.commit()
         
         return user_register
@@ -116,7 +115,7 @@ class UserRegisterRepository:
             List[UserRegister]: Lista de registros de usuario
         """
         query = UserRegister.query        
-        query = query.filter_by(Active=True)
+        query = query.filter_by(Active=True, ApprovalDate=None)  # Solo registros activos y pendientes de aprobación
         
         return query.all()
     
@@ -129,3 +128,14 @@ class UserRegisterRepository:
         """
         return UserRegister.query.filter_by(Active=True, ApprovalDate=None).count()
     
+    @staticmethod
+    def get_by_id(user_register_id: int) -> Optional[UserRegister]:
+        """Obtiene un registro de usuario por su ID.
+        
+        Args:
+            user_register_id: ID del registro de usuario a obtener
+        
+        Returns:
+            UserRegister: El registro de usuario encontrado, o None si no se encuentra
+        """
+        return UserRegister.query.filter_by(Id = user_register_id, Active = True).first()

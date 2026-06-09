@@ -1,13 +1,18 @@
+import uuid
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
+from flask import Flask
+from flask_mail import Mail
+
 import sys
 from pathlib import Path
-
 # Agregar la raíz del proyecto al path
 root = Path(__file__).parent.parent
 sys.path.insert(0, str(root))
 
+from API.services.mailService import send_welcome_email
 from config import config 
 
 app = Flask(__name__)
@@ -15,6 +20,18 @@ CORS(app)  # Enable CORS for frontend applications (Angular, React, etc.)
 
 from DATABASE.db import init_db
 init_db(app)
+
+
+app.config['MAIL_SERVER'] = config.mail_server
+app.config['MAIL_PORT'] = config.mail_port
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = config.mail_username
+app.config['MAIL_PASSWORD'] = config.mail_password
+mail = Mail()
+mail.init_app(app) # This initializes the email service
+
+mail.default_sender = config.mail_username  # Set the default sender email address
+
 
 import API.EndPoints.users as users
 import API.EndPoints.models as models
@@ -49,9 +66,25 @@ def home():
     translation = TRANSLATE.translate.translate(text)
     return  jsonify({"traduction": translation})
 
+
+@app.get("/mail")
+def register():
+
+    print("Simulating user registration...")
+
+    # ... logic to save user to DB ...
+    user_email = "jesusroberto.hijarangulo.01@gmail.com"
+    user_name = "John Doe"
+    token = str(uuid.uuid4())
+
+    send_welcome_email(user_email, user_name, token)
+    return "Check your inbox!"
+
+
 if __name__ == '__main__':
     app.run(
         host=config.api_host,
         port=config.api_port,
         debug=config.app_debug
     )
+

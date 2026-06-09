@@ -75,7 +75,29 @@ class Settings:
     @property
     def JW_SECRET_KEY(self) -> str:
         return os.getenv('SECRET_KEY')
-
     
+
+    #MAIL CONFIG
+    @property
+    def mail_server(self) -> str:
+        return os.getenv('MAIL_SERVER')
+    
+    @property
+    def mail_port(self) -> int:
+        return int(os.getenv('MAIL_PORT'))
+    
+    @property
+    def mail_username(self) -> str:
+        return os.getenv('MAIL_USERNAME')
+    
+    @property
+    def mail_password(self) -> str:
+        return os.getenv('MAIL_PASSWORD')
+    
+
+    #URL
+    @property
+    def set_password_url(self) -> str:
+        return os.getenv('SET_PASSOWRD_URL')
 
 config = Settings()

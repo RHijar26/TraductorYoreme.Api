@@ -1,3 +1,5 @@
+import uuid
+
 from flask import Blueprint, request, jsonify
 from functools import wraps
 
@@ -9,7 +11,9 @@ root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root))
 
 
+from API.services.mailService import send_welcome_email
 from DATABASE.repositories.userRegisterRepository import UserRegisterRepository
+from DATABASE.repositories.userRepository import UserRepository
 from DATABASE.db import db
 
 user_register_bp = Blueprint('userRegister', __name__, url_prefix='/userRegister')
@@ -65,8 +69,27 @@ def register():
             'error': str(e)
         }), 500
     
-@user_register_bp.get('/approve/<int:user_register_id>')
+@user_register_bp.put('/approve/<int:user_register_id>')
 def approve(user_register_id: int):
+    try:                  
+        user_update = UserRegisterRepository.approve(
+            user_register_id            
+        )        
+
+        if not user_update:
+            return jsonify({'success': False, 'error': "No se pudo aprobar el usuario"}), 500                
+        
+        token = str(uuid.uuid4())
+
+        send_welcome_email(user_update.Email, user_update.Name,token)  # Enviar correo de bienvenida al usuario aprobado
+
+        return jsonify({
+            'success': True,
+            'message': 'Usuario aprobado y correo de confirmación enviado.'
+        }), 200
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
     try:
         user_register = UserRegisterRepository.approve(user_register_id)
         if not user_register:
