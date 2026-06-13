@@ -69,11 +69,12 @@ class UserRegisterRepository:
         return new_user, None
     
     @staticmethod
-    def approve(user_register_id: int) -> Optional[UserRegister]:        
+    def approve(user_register_id: int, token: str) -> Optional[UserRegister]:        
         """Aprueba un registro de usuario, activándolo y estableciendo la fecha de aprobación.
         
         Args:
             user_register_id: ID del registro de usuario a aprobar
+            token: Token de confirmación del registro de usuario
         
         Returns:
             UserRegister: El registro de usuario aprobado, o None si no se encuentra
@@ -83,6 +84,7 @@ class UserRegisterRepository:
             return None
                 
         user_register.ApprovalDate = date.today()    
+        user_register.Token = token  
 
         db.db.session.commit()
         
@@ -139,3 +141,15 @@ class UserRegisterRepository:
             UserRegister: El registro de usuario encontrado, o None si no se encuentra
         """
         return UserRegister.query.filter_by(Id = user_register_id, Active = True).first()
+    
+    @staticmethod
+    def get_by_token(token: str) -> Optional[UserRegister]:
+        """Obtiene un registro de usuario por su token de confirmación.
+        
+        Args:
+            token: Token de confirmación del registro de usuario
+        
+        Returns:
+            UserRegister: El registro de usuario encontrado, o None si no se encuentra
+        """
+        return UserRegister.query.filter_by(Token=token, Active=True).first()

@@ -22,7 +22,7 @@ class User(db.Model):
     CreateDate = db.Column('CreateDate', db.Date, nullable=False, default=date.today)
     Active = db.Column('Active', db.Boolean, nullable=False, default=True)
     Acepted = db.Column('Acepted', db.Boolean, nullable=False, default=True)
-    RoleId =  db.Column('RoleId', db.BigInteger, primary_key=True, autoincrement=True)    
+    RoleId =  db.Column('RoleId', db.BigInteger, primary_key=True)    
     
     # Índices adicionales
     __table_args__ = (
@@ -99,8 +99,7 @@ class User(db.Model):
         - Mínimo 8 caracteres
         - Al menos una letra mayúscula
         - Al menos una letra minúscula
-        - Al menos un número
-        - Al menos un carácter especial
+        - Al menos un número        
         
         Returns:
             (is_valid, error_message)
@@ -121,10 +120,7 @@ class User(db.Model):
             return False, "La contraseña debe contener al menos una letra minúscula"
         
         if not re.search(r'[0-9]', password):
-            return False, "La contraseña debe contener al menos un número"
-        
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            return False, "La contraseña debe contener al menos un carácter especial (!@#$%^&*(),.?\":{}|<>)"
+            return False, "La contraseña debe contener al menos un número"                
         
         return True, ""
     

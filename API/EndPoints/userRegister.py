@@ -72,14 +72,16 @@ def register():
 @user_register_bp.put('/approve/<int:user_register_id>')
 def approve(user_register_id: int):
     try:                  
+        token = str(uuid.uuid4())
+        
         user_update = UserRegisterRepository.approve(
-            user_register_id            
+            user_register_id,
+            token
         )        
 
         if not user_update:
             return jsonify({'success': False, 'error': "No se pudo aprobar el usuario"}), 500                
         
-        token = str(uuid.uuid4())
 
         send_welcome_email(user_update.Email, user_update.Name,token)  # Enviar correo de bienvenida al usuario aprobado
 
@@ -154,6 +156,73 @@ def decline(user_register_id: int):
             'data': user_register.to_dict()
         }), 200
 
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+    
+@user_register_bp.post('/setPassword')
+def set_password():
+    try:
+        data = request.get_json()             
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'No se proporcionaron datos'
+            }), 400
+        
+        # Validar campos requeridos
+        required_fields = ['token', 'password']
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        
+        if missing_fields:
+            return jsonify({
+                'success': False,
+                'error': f'Campos requeridos faltantes: {", ".join(missing_fields)}'
+            }), 400
+        
+        user_register = UserRegisterRepository.get_by_token(data['token'])
+        
+        if not user_register:
+            return jsonify({
+                'success': False,
+                'error': 'Token inválido o expirado'
+            }), 400
+
+        user, error = UserRepository.create(
+            email=user_register.Email,
+            password=data['password'],
+            name=user_register.Name,
+            last_name=user_register.LastName,
+            second_last_name=user_register.SecondLastName
+        )
+        
+        if error:            
+            status_code = 409 if 'ya está registrado' in error else 400
+            return jsonify({
+                'success': False,
+                'error': error
+            }), status_code
+        
+        user_decline = UserRegisterRepository.decline(user_register.Id)  
+        if not user_decline:
+            return jsonify({
+                'success': False,
+                'error': 'Registro de usuario no encontrado'
+            }), 404
+        
+        # Usuario creado exitosamente
+        return jsonify({
+            'success': True,
+            'message': 'Usuario registrado exitosamente, bienvenido a la plataforma!',
+        }), 201        
+
+
+        return jsonify({
+            'success': True,
+            'message': 'Token recibido, aquí se implementaría la lógica para establecer la contraseña.'
+        }), 200
     except Exception as e:
         return jsonify({
             'success': False,

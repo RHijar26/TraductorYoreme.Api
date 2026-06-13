@@ -21,6 +21,7 @@ class UserRegister(db.Model):
     CreateDate = db.Column('CreateDate', db.Date, nullable=False, default=date.today)
     ApprovalDate = db.Column('ApprovalDate', db.Date, nullable=True)
     Active = db.Column('Active', db.Boolean, nullable=False, default=False)
+    Token = db.Column('Token', db.Text, nullable=True)  # Campo para almacenar el token de confirmación
     
     def __repr__(self):
         return f"<UserRegister {self.Email}>"

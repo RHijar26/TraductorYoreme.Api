@@ -10,6 +10,7 @@ root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root))
 
 from DATABASE.models.user import User
+from DATABASE.models.role import ADMINISTRATOR, TRANSLATOR
 from DATABASE import db
 
 class UserRepository:
@@ -71,7 +72,8 @@ class UserRepository:
                 SecondLastName=second_last_name.strip(),
                 CreateDate=date.today(),
                 Active=True,
-                Acepted=False,                                
+                Acepted=False,     
+                RoleId=TRANSLATOR               
             )
             
             # Hashear contraseña
