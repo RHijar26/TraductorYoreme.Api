@@ -13,6 +13,7 @@ root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root))
 
 from DATABASE.repositories.userRepository import UserRepository
+from DATABASE.repositories.rolesRepository import RolesRepository
 from DATABASE.db import db
 from config import config
 
@@ -84,8 +85,11 @@ def generate_token(user):
     Returns:
         str: Token JWT
     """
+    role = RolesRepository.get_by_id(user.RoleId)
+
     payload = {
         'user_id': user.Id,
+        'role': role.Name if role else 'Unknown',
         'email': user.Email,
         'exp': datetime.utcnow() + timedelta(hours=config.JW_TOKEN_EXPIRATION_TIME),
         'iat': datetime.utcnow()

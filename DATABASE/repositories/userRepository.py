@@ -10,7 +10,7 @@ root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root))
 
 from DATABASE.models.user import User
-from DATABASE.models.role import ADMINISTRATOR, TRANSLATOR
+from DATABASE.models.roles import ADMINISTRATOR, TRANSLATOR
 from DATABASE import db
 
 class UserRepository:
