@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 from datetime import datetime, date
-from sqlalchemy import func, or_, text
+from sqlalchemy import func, or_, sql, text
 
 import sys
 from pathlib import Path
@@ -127,11 +127,32 @@ class PhraseRepository:
         """
         return Phrase.query.get(phrase_id)
 
-    def get_all() -> List[Phrase]:
+    def get_all(page: int = 1, page_size: int = 100) -> List[Phrase]:
         """Obtiene todas las frases registradas en la base de datos.
         
         Returns:
             List[Phrase]: Lista de objetos Phrase
         """
-        sql = text('SELECT * FROM "Phrases" WHERE "Active" = true ORDER BY "Id" DESC')
-        return Phrase.query.from_statement(sql).all()
+
+        sql = text(f"""
+            SELECT 
+                P."Id",
+                P."Phrase", 
+                LS."Name" AS "PhraseLanguage",
+                P."Traduction" AS "Translation",
+                LT."Name" AS "TranslationLanguage",
+                R."Name" AS "Region",
+                M."Name" AS "Model",
+                PS."Name" AS "Status",
+                PS."CreateDate"
+            FROM public."Phrase" AS P
+            INNER JOIN public."PhraseStatus" AS PS ON P."StatusId" = PS."Id"
+            INNER JOIN public."Regions" AS R ON R."Id" = P."RegionId"
+            INNER JOIN public."Models" AS M ON M."Id" = P."ModelId" 
+            INNER JOIN public."Language" AS LS ON LS."Id" = P."SourceLanguageId"
+            INNER JOIN public."Language" AS LT ON LT."Id" = P."TargetLanguageId"            
+            ORDER BY p."Id"
+            LIMIT :page_size OFFSET :offset
+        """)
+        result = db.db.session.execute(sql, {"page_size": page_size, "offset": (page - 1) * page_size})
+        return [row._mapping for row in result]

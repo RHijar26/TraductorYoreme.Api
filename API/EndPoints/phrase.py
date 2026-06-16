@@ -71,8 +71,17 @@ def register():
 @phrase_bp.get('/')
 def get_all():
     try:
-        phrases = PhraseRepository.get_all()
-        return jsonify([phrase.to_dict() for phrase in phrases]), 200
+        page = request.args.get('page', 1, type=int)
+        page_size = request.args.get('pageSize', 100, type=int)
+        phrases = PhraseRepository.get_all(page, page_size)    
+
+        return jsonify({
+            'success': True,
+            'data': [{k[0].lower() + k[1:]: v for k, v in phrase.items()} for phrase in phrases],
+            'page': page,
+            'pageSize': page_size
+            
+        }), 200
     except Exception as e:
         return jsonify({
             'success': False,
