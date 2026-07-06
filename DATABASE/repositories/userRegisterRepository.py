@@ -34,8 +34,6 @@ class UserRegisterRepository:
         is_valid, error_msg = UserRegister.validate_email(email)
         if not is_valid:
             raise ValueError(error_msg)        
-
-        print(f"Validación exitosa para email: {email}")        
         
         # Validar nombre y apellidos
         for field_value, field_name in [(name, "Nombre"), (last_name, "Apellido"), (second_last_name, "Segundo Apellido")]:

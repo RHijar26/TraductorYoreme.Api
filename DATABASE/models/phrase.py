@@ -20,6 +20,7 @@ class Phrase(db.Model):
     StatusId= db.Column('StatusId', db.SmallInteger, nullable=False)
     Phrase = db.Column('Phrase', db.Text, nullable=False)  
     Traduction = db.Column('Traduction', db.Text, nullable=False)  
+    Votes = db.Column('Votes',db.SmallInteger,nullable =False)
     CreateDate = db.Column('CreateDate', db.Date, nullable=False, default=date.today)
     Active = db.Column('Active', db.Boolean, nullable=False, default=True)
 

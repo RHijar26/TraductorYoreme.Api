@@ -9,6 +9,8 @@ from pathlib import Path
 root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root))
 
+from DATABASE.enums.phraseStatusEnum import PhraseStatus
+
 from DATABASE.models.phrase import Phrase
 from DATABASE.repositories.lenguageRepository import LenguageRepository
 from DATABASE.repositories.modelRepository import ModelRepository
@@ -37,7 +39,7 @@ class PhraseRepository:
         if not existing_model:
             return None, f"Modelo no válido"
         
-        existing_status = PhraseStatusRepository.get_by_code("PEN")
+        existing_status = PhraseStatusRepository.get_by_code(PhraseStatus.PENDING)
         if not existing_status:
             return None, f"Estado no válido"
         
@@ -151,6 +153,58 @@ class PhraseRepository:
             INNER JOIN public."Models" AS M ON M."Id" = P."ModelId" 
             INNER JOIN public."Language" AS LS ON LS."Id" = P."SourceLanguageId"
             INNER JOIN public."Language" AS LT ON LT."Id" = P."TargetLanguageId"            
+            ORDER BY p."Id"
+            LIMIT :page_size OFFSET :offset
+        """)
+        result = db.db.session.execute(sql, {"page_size": page_size, "offset": (page - 1) * page_size})
+        return [row._mapping for row in result]
+    
+
+    def get_hub_all(page: int = 1, page_size: int = 100) :
+        """Obtiene todas las frases registradas en la base de datos para el hub.
+        
+        Returns:
+            List[Phrase]: Lista de objetos Phrase
+        """
+
+        sql = text(f"""
+            SELECT 
+                P."Id"
+                ,P."Phrase"
+                ,P."Traduction"
+                ,P."Votes" 
+                ,PS."Name"	AS Status
+                ,R."Name" AS Region
+                ,M."Name" AS Model
+                ,LS."Code" AS SourceLanguageCode
+                ,LT."Code" AS TargetLanguageCode
+                ,CASE 
+                    -- Si la fecha es hoy o futura
+                    WHEN P."CreateDate" >= CURRENT_DATE THEN 'Hoy'
+                    -- Si pasaron menos de 7 días
+                    WHEN (CURRENT_DATE - P."CreateDate") < 7 
+                        THEN (CURRENT_DATE - P."CreateDate")::VARCHAR || 'd ago'    
+                -- Si pasaron menos de 30 días
+                    WHEN (CURRENT_DATE - P."CreateDate") < 30 
+                        THEN (CURRENT_DATE - P."CreateDate")::VARCHAR || ' días'
+                    -- Si pasó 1 mes exacto
+                    WHEN EXTRACT(MONTH FROM AGE(CURRENT_DATE, P."CreateDate")) = 1 
+                        THEN '1m ago'
+                    -- Si pasaron menos de 12 meses
+                    WHEN EXTRACT(MONTH FROM AGE(CURRENT_DATE, P."CreateDate")) < 12 
+                        THEN EXTRACT(MONTH FROM AGE(CURRENT_DATE, P."CreateDate"))::VARCHAR || 'm ago'
+                    -- Si pasaron más de 12 meses
+                    ELSE EXTRACT(YEAR FROM AGE(CURRENT_DATE, P."CreateDate"))::VARCHAR || 'y ago'
+                END AS TimeAgo
+                ,COUNT(PP."Id") AS Replies
+            FROM public."Phrase" AS P
+            INNER JOIN public."PhraseStatus" AS PS ON PS."Id" = P."StatusId"
+            INNER JOIN public."Regions" AS R ON R."Id" = P."RegionId" 
+            INNER JOIN public."Models" AS M ON M."Id" = P."ModelId"
+            INNER JOIN public."Language" AS LS ON P."SourceLanguageId" = LS."Id"
+            INNER JOIN public."Language" AS LT ON P."TargetLanguageId" = LT."Id"
+            LEFT JOIN public."PhraseProposal" AS PP ON PP."PhraseId" = P."Id"
+            GROUP BY P."Id",P."Phrase",P."Traduction",P."Votes",PS."Name",R."Name",LS."Code",LT."Code",M."Name" 
             ORDER BY p."Id"
             LIMIT :page_size OFFSET :offset
         """)
