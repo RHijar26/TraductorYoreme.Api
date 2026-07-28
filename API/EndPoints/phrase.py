@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify,g
 from functools import wraps
 
 import sys
@@ -8,6 +8,8 @@ from pathlib import Path
 root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root))
 
+from API.Middleware.authDecorator import jwt_required, require_role
+from API.Enums.Roles import Roles
 
 from DATABASE.repositories.phraseRepository import PhraseRepository
 from DATABASE.db import db
@@ -15,9 +17,10 @@ from DATABASE.db import db
 phrase_bp = Blueprint('phrases', __name__, url_prefix='/phrases')
 
 @phrase_bp.post('/register')
+@require_role([Roles.ADMINISTRATOR, Roles.TRANSLATOR])
 def register():
     try:
-        # Obtener datos del request
+        # Obtener datos del request        
         data = request.get_json()
 
         if not data:
@@ -35,7 +38,8 @@ def register():
                 'success': False,
                 'error': f'Campos requeridos faltantes: {", ".join(missing_fields)}'
             }), 400
-        
+
+        author_id = g.user_id
         # Crear frase
         phrase, error = PhraseRepository.create(
             sourceLanguage=data['sourceLanguage'],
@@ -43,7 +47,8 @@ def register():
             regionId=data['regionId'],
             modelId=data['modelId'],
             phrase=data['phrase'],
-            traduction=data['traduction']
+            traduction=data['traduction'],
+            authorId=author_id            
         )
 
         if error:

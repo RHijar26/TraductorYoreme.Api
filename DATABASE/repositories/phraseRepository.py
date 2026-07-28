@@ -21,7 +21,7 @@ from DATABASE import db
 class PhraseRepository:
 
 
-    def create(sourceLanguage: int, targetLanguage: int, regionId : int, modelId: int, phrase: str, traduction: str) -> Tuple[Optional[Phrase], Optional[str]]:
+    def create(sourceLanguage: int, targetLanguage: int, regionId : int, modelId: int, phrase: str, traduction: str,authorId: int) -> Tuple[Optional[Phrase], Optional[str]]:
         
         existing_source_lenguage = LenguageRepository.get_by_id(sourceLanguage)
         if not existing_source_lenguage:
@@ -37,11 +37,7 @@ class PhraseRepository:
         
         existing_model = ModelRepository.get_by_id(modelId)
         if not existing_model:
-            return None, f"Modelo no válido"
-        
-        existing_status = PhraseStatusRepository.get_by_code(PhraseStatus.PENDING)
-        if not existing_status:
-            return None, f"Estado no válido"
+            return None, f"Modelo no válido"              
         
         try:
             new_phrase = Phrase(
@@ -49,11 +45,13 @@ class PhraseRepository:
                 TargetLanguageId=existing_target_lenguage.Id,
                 RegionId=existing_region.Id,
                 ModelId=existing_model.Id,
-                StatusId=existing_status.Id,
+                StatusId=PhraseStatus.PENDING,
                 Phrase=phrase.strip(),
                 Traduction=traduction.strip(),
+                Votes=0,
                 CreateDate=date.today(),
-                Active=True
+                Active=True,
+                AuthorId=authorId
             )
 
             db.db.session.add(new_phrase)
@@ -168,44 +166,63 @@ class PhraseRepository:
         """
 
         sql = text(f"""
-            SELECT 
-                P."Id"
-                ,P."Phrase"
-                ,P."Traduction"
-                ,P."Votes" 
-                ,PS."Name"	AS Status
-                ,R."Name" AS Region
-                ,M."Name" AS Model
-                ,LS."Code" AS SourceLanguageCode
-                ,LT."Code" AS TargetLanguageCode
-                ,CASE 
-                    -- Si la fecha es hoy o futura
-                    WHEN P."CreateDate" >= CURRENT_DATE THEN 'Hoy'
-                    -- Si pasaron menos de 7 días
-                    WHEN (CURRENT_DATE - P."CreateDate") < 7 
-                        THEN (CURRENT_DATE - P."CreateDate")::VARCHAR || 'd ago'    
-                -- Si pasaron menos de 30 días
-                    WHEN (CURRENT_DATE - P."CreateDate") < 30 
-                        THEN (CURRENT_DATE - P."CreateDate")::VARCHAR || ' días'
-                    -- Si pasó 1 mes exacto
-                    WHEN EXTRACT(MONTH FROM AGE(CURRENT_DATE, P."CreateDate")) = 1 
-                        THEN '1m ago'
-                    -- Si pasaron menos de 12 meses
-                    WHEN EXTRACT(MONTH FROM AGE(CURRENT_DATE, P."CreateDate")) < 12 
-                        THEN EXTRACT(MONTH FROM AGE(CURRENT_DATE, P."CreateDate"))::VARCHAR || 'm ago'
-                    -- Si pasaron más de 12 meses
-                    ELSE EXTRACT(YEAR FROM AGE(CURRENT_DATE, P."CreateDate"))::VARCHAR || 'y ago'
+            ;WITH PhraseHub AS (    
+                SELECT 
+                    P."Id"
+                    ,P."Phrase"
+                    ,P."Traduction"
+                    ,P."Votes" 
+                    ,P."AuthorId" AS Author
+                    ,PS."Name"	AS Status
+                    ,R."Name" AS Region
+                    ,M."Name" AS Model
+                    ,LS."Code" AS SourceLanguageCode
+                    ,LT."Code" AS TargetLanguageCode		
+                    ,CASE 			
+                        WHEN P."CreateDate" >= CURRENT_DATE THEN 'Hoy'			
+                        WHEN (CURRENT_DATE - P."CreateDate") < 7 
+                            THEN (CURRENT_DATE - P."CreateDate")::VARCHAR || 'd ago'    
+                        WHEN (CURRENT_DATE - P."CreateDate") < 30 
+                            THEN (CURRENT_DATE - P."CreateDate")::VARCHAR || ' días'			
+                        WHEN EXTRACT(MONTH FROM AGE(CURRENT_DATE, P."CreateDate")) = 1 
+                            THEN '1m ago'			
+                        WHEN EXTRACT(MONTH FROM AGE(CURRENT_DATE, P."CreateDate")) < 12 
+                            THEN EXTRACT(MONTH FROM AGE(CURRENT_DATE, P."CreateDate"))::VARCHAR || 'm ago'			
+                        ELSE EXTRACT(YEAR FROM AGE(CURRENT_DATE, P."CreateDate"))::VARCHAR || 'y ago'	
                 END AS TimeAgo
-                ,COUNT(PP."Id") AS Replies
-            FROM public."Phrase" AS P
-            INNER JOIN public."PhraseStatus" AS PS ON PS."Id" = P."StatusId"
-            INNER JOIN public."Regions" AS R ON R."Id" = P."RegionId" 
-            INNER JOIN public."Models" AS M ON M."Id" = P."ModelId"
-            INNER JOIN public."Language" AS LS ON P."SourceLanguageId" = LS."Id"
-            INNER JOIN public."Language" AS LT ON P."TargetLanguageId" = LT."Id"
-            LEFT JOIN public."PhraseProposal" AS PP ON PP."PhraseId" = P."Id"
-            GROUP BY P."Id",P."Phrase",P."Traduction",P."Votes",PS."Name",R."Name",LS."Code",LT."Code",M."Name" 
-            ORDER BY p."Id"
+                FROM public."Phrase" AS P
+                INNER JOIN public."PhraseStatus" AS PS ON PS."Id" = P."StatusId"
+                INNER JOIN public."Regions" AS R ON R."Id" = P."RegionId" 
+                INNER JOIN public."Models" AS M ON M."Id" = P."ModelId"
+                INNER JOIN public."Language" AS LS ON P."SourceLanguageId" = LS."Id"
+                INNER JOIN public."Language" AS LT ON P."TargetLanguageId" = LT."Id"
+                LEFT JOIN public."PhraseProposal" AS PP ON PP."PhraseId" = P."Id"
+                LEFT JOIN public."PhraseVote" AS PV ON PV."PhraseId" = P."Id"
+                GROUP BY P."Id",P."Phrase",P."Traduction",P."Votes",PS."Name",R."Name",LS."Code",LT."Code",M."Name" 	
+            ),
+            PhraseProposal AS( 
+                SELECT 	
+                    P."Id"
+                    ,COUNT(PP."Id") AS Proposals
+                FROM public."Phrase" AS P
+                INNER JOIN public."PhraseProposal" AS PP ON PP."PhraseId" = P."Id"
+                GROUP BY P."Id"
+            ),
+            PhraseVotes AS( 
+                SELECT 	
+                    P."Id"
+                    ,COUNT(PV."Id") AS Votes
+                FROM public."Phrase" AS P
+                INNER JOIN public."PhraseVote" AS PV ON PV."PhraseId" = P."Id"
+                GROUP BY P."Id"
+            )
+            SELECT 
+            P.*
+            ,COALESCE(PP."proposals",0) AS proposals
+            ,COALESCE(PV."votes",0) votes
+            FROM PhraseHub AS P
+            LEFT JOIN PhraseProposal AS PP ON PP."Id" = P."Id"
+            LEFT JOIN PhraseVotes AS PV ON PV."Id" = P."Id"
             LIMIT :page_size OFFSET :offset
         """)
         result = db.db.session.execute(sql, {"page_size": page_size, "offset": (page - 1) * page_size})

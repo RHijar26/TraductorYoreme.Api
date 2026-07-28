@@ -13,6 +13,7 @@ from API.Enums.Roles import Roles
 
 from DATABASE.repositories.phraseProposalRepository import PhraseProposalRepository
 from DATABASE.repositories.phraseRepository import PhraseRepository
+from DATABASE.repositories.phraseVoteRepository import PhraseVoteRepository
 from DATABASE.db import db
 
 hub_bp = Blueprint('hub', __name__, url_prefix='/hub')
@@ -94,4 +95,107 @@ def create_proposal():
         return jsonify({
             'success': False,
             'error': f'Error: {str(e)}'
+        }), 500    
+
+@hub_bp.put('/proposal/decline')
+@require_role([Roles.ADMINISTRATOR, Roles.TRANSLATOR])
+def decline_proposal():
+    try:        
+        data = request.get_json()        
+        required_fields = ['proposal']
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        if missing_fields:
+            return jsonify({
+                'success': False,
+                'error': f'Campos requeridos faltantes: {", ".join(missing_fields)}'
+            }), 400
+
+        declined, error = PhraseProposalRepository.decline(
+            data['proposal'],            
+        )
+        if error:
+            return jsonify({
+                'success': False,
+                'error': error
+            }), 400
+
+        return jsonify({
+            'success': True,
+            'message': 'Propuesta declinada exitosamente',
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error: {str(e)}'
         }), 500
+
+@hub_bp.put('/proposal/approve')
+@require_role([Roles.ADMINISTRATOR, Roles.TRANSLATOR])
+def accept_proposal():
+    try:        
+        data = request.get_json()        
+        required_fields = ['proposal']
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        if missing_fields:
+            return jsonify({
+                'success': False,
+                'error': f'Campos requeridos faltantes: {", ".join(missing_fields)}'
+            }), 400
+
+        accepted, error = PhraseProposalRepository.approve(
+            data['proposal'],            
+            g.user_id
+        )
+        if error:
+            return jsonify({
+                'success': False,
+                'error': error
+            }), 400
+
+        return jsonify({
+            'success': True,
+            'message': 'Propuesta aceptada exitosamente',
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error: {str(e)}'
+        }), 500
+
+@hub_bp.post('/phrase/vote')
+@require_role([Roles.ADMINISTRATOR, Roles.TRANSLATOR])
+def  vote_phrase():
+    try:        
+        user_id = g.user_id
+        data = request.get_json()                
+        required_fields = ['phrase']        
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        if missing_fields:
+            return jsonify({
+                'success': False,
+                'error': f'Campos requeridos faltantes: {", ".join(missing_fields)}'
+            }), 400       
+
+        voted, error = PhraseVoteRepository.handle(            
+            data['phrase'],
+            user_id
+        )
+        
+        if not voted and error:
+            return jsonify({
+                'success': False,
+                'error': error                
+            }), 400
+
+        return jsonify({
+            'success': True,
+            'message': 'Voto registrado exitosamente',
+            'voted':  voted
+        }), 200
+    except Exception as e:
+        db.db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Error: {str(e)}'
+        }), 500
+

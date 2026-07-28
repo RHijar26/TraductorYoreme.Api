@@ -23,6 +23,7 @@ class Phrase(db.Model):
     Votes = db.Column('Votes',db.SmallInteger,nullable =False)
     CreateDate = db.Column('CreateDate', db.Date, nullable=False, default=date.today)
     Active = db.Column('Active', db.Boolean, nullable=False, default=True)
+    AuthorId = db.Column('AuthorId', db.BigInteger, nullable=False)
 
     def __repr__(self):
         return f"<Phrase {self.Phrase}>"

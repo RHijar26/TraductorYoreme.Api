@@ -10,8 +10,11 @@ root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root))
 
 from DATABASE.enums.phraseStatusEnum import PhraseStatus
-
 from DATABASE.models.phraseProposal import PhraseProposal
+from DATABASE.models.phrase import Phrase
+
+from DATABASE.repositories.userRepository import UserRepository
+
 from DATABASE import db
 
 class PhraseProposalRepository:
@@ -43,6 +46,65 @@ class PhraseProposalRepository:
             return None, f"Error al crear frase: {str(e)}"
 
     @staticmethod
+    def approve(proposalId: int,userId : int) -> Tuple[Optional[PhraseProposal], Optional[str]]:
+        existing_proposal = PhraseProposal.query.filter_by(Id=proposalId, StatusId=PhraseStatus.PENDING).first()
+        
+        if not existing_proposal:
+            return None, f"Propuesta no válida"
+        
+
+        user = UserRepository.get_by_id(userId)
+        if not user:
+            return None, f"Usuario no válido"
+
+        try:
+
+            # Cancelar todas las PENDING de la misma frase (excepto esta)
+            PhraseProposal.query.filter(
+                PhraseProposal.PhraseId == existing_proposal.PhraseId,
+                PhraseProposal.StatusId == PhraseStatus.PENDING,
+                PhraseProposal.Id != proposalId
+            ).update(
+                {PhraseProposal.StatusId: PhraseStatus.DECLINED,PhraseProposal.ResolutionNote: "Se aceptó otra propuesta para esta frase"},
+                synchronize_session=False
+            )
+            
+            existing_proposal.StatusId = PhraseStatus.APPROVED
+            existing_proposal.ResolvedAt = date.today()
+            existing_proposal.ResolutionNote = f"Tu propuesta fue aceptada por {user.Name} {user.LastName} {user.SecondLastName}"
+
+            Phrase.query.filter_by(Id=existing_proposal.PhraseId
+            ).update(
+                {Phrase.Traduction: existing_proposal.ProposedText},
+                synchronize_session=False
+            )
+
+            db.db.session.commit()
+
+            return existing_proposal, None
+        except Exception as e:
+            db.db.session.rollback()
+            return None, f"Error al aprobar propuesta: {str(e)}"
+
+    @staticmethod
+    def decline(proposalId: int) -> Tuple[Optional[PhraseProposal], Optional[str]]:
+        existing_proposal = PhraseProposal.query.filter_by(Id=proposalId, StatusId=PhraseStatus.PENDING).first()
+        
+        if not existing_proposal:
+            return None, f"Propuesta no válida"
+        
+        try:
+            existing_proposal.StatusId = PhraseStatus.DECLINED
+            existing_proposal.ResolvedAt = date.today()
+            existing_proposal.ResolutionNote = "Tu propuesta fue declinada"
+            db.db.session.commit()
+
+            return existing_proposal, None
+        except Exception as e:
+            db.db.session.rollback()
+            return None, f"Error al declinar propuesta: {str(e)}"
+
+    @staticmethod
     def get_by_author_phrase(authorId,phraseId) -> Optional[PhraseProposal]:
         """Obtiene la propuesta en base al autor y la frase
         
@@ -72,6 +134,7 @@ class PhraseProposalRepository:
             PP."Id"
             ,PP."ProposedText"
             ,PP."Reason"
+            ,PS."Name"	AS Status
             ,CONCAT(U."Name", ' ', U."LastName", ' ', U."SecondLastName") AS "User"		
             ,CASE 
                 -- Si la fecha es hoy o futura
@@ -92,43 +155,11 @@ class PhraseProposalRepository:
                 ELSE EXTRACT(YEAR FROM AGE(CURRENT_DATE, PP."CreateDate"))::VARCHAR || 'y ago'
             END AS TimeAgo
             FROM public."PhraseProposal" AS PP
-            INNER JOIN public."Users" AS U ON U."Id" = PP."AuthorId";
-
+            INNER JOIN public."Users" AS U ON U."Id" = PP."AuthorId"
+            INNER JOIN public."PhraseStatus" AS PS ON PS."Id" = PP."StatusId"
+            WHERE PP."PhraseId" = :phraseId
+            LIMIT :page_size OFFSET :offset;
         """)
     
-        result = db.db.session.execute(sql, {"page_size": page_size, "offset": (page - 1) * page_size})
-        return [row._mapping for row in result]
-    
-
-    @staticmethod
-    def vote_proposal(proposalId: int, userId: int, vote: bool) -> Tuple[Optional[PhraseProposal], Optional[str]]:
-        """Vota una propuesta de frase
-        
-        Args:
-            proposalId: ID de la propuesta
-            userId: ID del usuario que vota
-            vote: True si es positivo, False si es negativo
-        
-        Returns:
-            Tuple[Optional[PhraseProposal], Optional[str]]: La propuesta actualizada y un mensaje de error si ocurre alguno
-        """
-        proposal = PhraseProposal.query.get(proposalId)
-        
-        if not proposal:
-            return None, "Propuesta no encontrada"
-        
-        # Aquí deberías implementar la lógica para registrar el voto del usuario.
-        # Esto podría implicar crear una tabla de votos y actualizar el conteo de votos en la propuesta.
-        
-        try:
-            # Ejemplo de actualización de votos (esto es solo un ejemplo, ajusta según tu modelo)
-            if vote:
-                proposal.PositiveVotes += 1
-            else:
-                proposal.NegativeVotes += 1
-            
-            db.db.session.commit()
-            return proposal, None
-        except Exception as e:
-            db.db.session.rollback()
-            return None, f"Error al votar la propuesta: {str(e)}"
+        result = db.db.session.execute(sql, {"page_size": page_size, "offset": (page - 1) * page_size,"phraseId": phraseId})
+        return [row._mapping for row in result]       

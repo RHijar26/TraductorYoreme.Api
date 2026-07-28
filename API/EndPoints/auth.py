@@ -87,10 +87,12 @@ def generate_token(user):
     """
     role = RolesRepository.get_by_id(user.RoleId)
 
+
     payload = {
         'user_id': user.Id,
         'role': role.Name if role else 'Unknown',
         'email': user.Email,
+        'name': user.Name + ' ' + user.LastName + ' ' + user.SecondLastName,
         'exp': datetime.utcnow() + timedelta(hours=config.JW_TOKEN_EXPIRATION_TIME),
         'iat': datetime.utcnow()
     }
